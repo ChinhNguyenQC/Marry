@@ -56,6 +56,10 @@
         const r = await loadByName(fname);
         if(r.ok){
           r.el.alt = `Couple ${fname}`;
+          // prevent default browser dragging which can interfere with swipe gestures
+          r.el.draggable = false;
+          r.el.setAttribute('draggable','false');
+          r.el.style.userSelect = 'none';
           slides.push(r.el);
         }
       }
@@ -76,6 +80,10 @@
         }
         if(r.ok){
           r.el.alt=`Couple ${i}`;
+          // prevent default browser dragging which can interfere with swipe gestures
+          r.el.draggable = false;
+          r.el.setAttribute('draggable','false');
+          r.el.style.userSelect = 'none';
           slides.push(r.el);
         }
       }
@@ -110,13 +118,16 @@
   }
   window.addEventListener('resize',()=>requestAnimationFrame(update));
 
-  // navigation
-  document.getElementById('prev').addEventListener('click',()=>{
-    index=(index-1+slides.length)%slides.length;update();
-  });
-  document.getElementById('next').addEventListener('click',()=>{
-    index=(index+1)%slides.length;update();
-  });
+  // navigation helpers (use these everywhere so we can remove the next button)
+  function prevSlide(){ index = (index - 1 + slides.length) % slides.length; update(); }
+  function nextSlide(){ index = (index + 1) % slides.length; update(); }
+
+  // wire up prev button if present, remove the visual "next" button (right arrow)
+  const prevBtnEl = document.getElementById('prev');
+  const nextBtnEl = document.getElementById('next');
+  if(prevBtnEl) prevBtnEl.addEventListener('click', prevSlide);
+  // remove the next arrow from the DOM so it's not visible or focusable
+  if(nextBtnEl && nextBtnEl.parentNode) nextBtnEl.parentNode.removeChild(nextBtnEl);
 
   // autoplay
   let timer=null;
@@ -127,6 +138,59 @@
   function stopAutoplay(){if(timer)clearInterval(timer);timer=null}
   slidesEl.addEventListener('mouseenter',stopAutoplay);
   slidesEl.addEventListener('mouseleave',startAutoplay);
+
+  // Horizontal swipe on slideshow to navigate slides (touch + pointer fallback)
+  (function(){
+    if(!slidesEl) return;
+    let startX = null, startY = null, tracking = false;
+    const THRESHOLD = 50; // px horizontal movement
+
+    let fired = false;
+    slidesEl.addEventListener('touchstart', function(e){
+      if(!e.touches || !e.touches.length) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      tracking = true;
+      fired = false;
+    }, {passive:true});
+
+    slidesEl.addEventListener('touchmove', function(e){
+      if(!tracking || fired) return;
+      const t = (e.touches && e.touches[0]) ? e.touches[0] : null;
+      if(!t) return;
+      const dx = startX - t.clientX;
+      const dy = startY - t.clientY;
+      // ignore mostly-vertical movement
+      if(Math.abs(dx) < Math.abs(dy)) return;
+      if(Math.abs(dx) > THRESHOLD){
+        fired = true;
+        if(dx > 0) nextSlide(); else prevSlide();
+      }
+    }, {passive:true});
+
+    slidesEl.addEventListener('touchend', function(e){
+      tracking = false;
+      startX = startY = null;
+      fired = false;
+    }, {passive:true});
+
+    // pointer events for mouse drag support
+    let pointerDown = false;
+    slidesEl.addEventListener('pointerdown', function(e){
+      pointerDown = true; startX = e.clientX; startY = e.clientY; fired = false;
+      slidesEl.setPointerCapture && slidesEl.setPointerCapture(e.pointerId);
+    });
+    slidesEl.addEventListener('pointermove', function(e){
+      if(!pointerDown || fired) return;
+      const dx = startX - e.clientX; const dy = startY - e.clientY;
+      if(Math.abs(dx) < Math.abs(dy)) return;
+      if(Math.abs(dx) > THRESHOLD){ fired = true; if(dx > 0) nextSlide(); else prevSlide(); }
+    });
+    slidesEl.addEventListener('pointerup', function(e){
+      pointerDown = false; startX = startY = null; fired = false;
+    });
+    slidesEl.addEventListener('pointercancel', ()=>{ pointerDown=false; startX=startY=null; fired=false; });
+  })();
 
   // modal actions (robust show/hide, prevent accidental hide)
   const modal=document.getElementById('modal');
@@ -169,13 +233,11 @@
     // support modern names and legacy keyCode numbers
     if (key === 'ArrowLeft' || key === 'Left' || key === 37) {
       e.preventDefault();
-      const prevBtn = document.getElementById('prev');
-      if (prevBtn) prevBtn.click();
+      prevSlide();
     }
     if (key === 'ArrowRight' || key === 'Right' || key === 39) {
       e.preventDefault();
-      const nextBtn = document.getElementById('next');
-      if (nextBtn) nextBtn.click();
+      nextSlide();
     }
     if (key === 'Escape' || key === 'Esc' || key === 27) {
       e.preventDefault();
@@ -219,4 +281,92 @@
       // run once now in case DOMContentLoaded already fired
       checkAndReveal();
     })();
+
+    // Mobile swipe-up / swipe-down handler to show/hide the right panel
+    function initMobileSwipeToggle(){
+      const RIGHT_BREAKPOINT = 900; // matches the CSS media query
+      const right = document.querySelector('.right');
+      const left = document.querySelector('.left');
+      if(!right || !left) return;
+
+      // start collapsed on small screens
+      function setInitial(){
+        if(window.matchMedia(`(max-width:${RIGHT_BREAKPOINT}px)`).matches){
+          right.classList.remove('revealed');
+          // ensure collapsed state (CSS handles collapsed style by absence of .revealed)
+        } else {
+          // on larger screens always show it
+          right.classList.add('revealed');
+        }
+      }
+
+      let startY = null;
+      let tracking = false;
+      const THRESHOLD = 60; // pixels to consider a swipe
+
+      // touch start on left area (swiping up anywhere on left should reveal)
+      left.addEventListener('touchstart', function(e){
+        if(e.touches && e.touches.length) startY = e.touches[0].clientY;
+        tracking = true;
+      }, {passive:true});
+
+      left.addEventListener('touchmove', function(e){
+        // optional: could implement a visual follow, but keep simple
+      }, {passive:true});
+
+      left.addEventListener('touchend', function(e){
+        if(!tracking || startY === null) return;
+        const endY = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientY : null;
+        tracking = false;
+        if(endY === null) { startY = null; return; }
+        const delta = startY - endY;
+        // swipe up -> reveal
+        if(delta > THRESHOLD){
+          right.classList.add('revealed');
+        }
+        // swipe down on left (when panel visible) -> hide
+        if(delta < -THRESHOLD){
+          right.classList.remove('revealed');
+        }
+        startY = null;
+      }, {passive:true});
+
+      // also listen for swipe down on the right panel to collapse
+      right.addEventListener('touchstart', function(e){
+        if(e.touches && e.touches.length) startY = e.touches[0].clientY;
+        tracking = true;
+      }, {passive:true});
+      right.addEventListener('touchend', function(e){
+        if(!tracking || startY === null) return;
+        const endY = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientY : null;
+        tracking = false;
+        if(endY === null) { startY = null; return; }
+        const delta = startY - endY;
+        // swipe down (delta negative) collapses
+        if(delta < -THRESHOLD){
+          right.classList.remove('revealed');
+        }
+        startY = null;
+      }, {passive:true});
+
+      // also support a two-finger or two-tap fallback: tapping a small hint could reveal —
+      // for simplicity, allow clicking on left to reveal if collapsed
+      left.addEventListener('click', function(){
+        if(window.matchMedia(`(max-width:${RIGHT_BREAKPOINT}px)`).matches){
+          if(!right.classList.contains('revealed')) right.classList.add('revealed');
+        }
+      });
+
+      // keep initial state in sync on resize
+      window.addEventListener('resize', setInitial);
+      // init now
+      setInitial();
+    }
+
+    // initialize swipe behaviors after content is ready
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', initMobileSwipeToggle);
+    } else {
+      initMobileSwipeToggle();
+    }
 })();

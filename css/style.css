@@ -27,6 +27,7 @@ html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;backg
 
 .slideshow{position:relative;width:100%;max-width:760px;border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(2,6,23,0.6)}
 .slides{display:flex;transition:transform .6s ease;height:60vh}
+.slides{touch-action: pan-y;} /* prefer vertical page scrolling, allow JS to detect horizontal swipes */
 .slides > .slide{flex:0 0 100%;min-width:100%;display:flex;align-items:center;justify-content:center}
 /* show the whole image (no cropping) in the slideshow viewport */
 .slides img{max-width:100%;max-height:60vh;object-fit:contain;display:block}
@@ -72,4 +73,28 @@ html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;backg
   .card .card-image{ height: clamp(160px, 30vh, 320px); width:100%; object-fit:cover }
 }
 
-@media (max-width:900px){.page{flex-direction:column}.right{width:100%}.slides{height:50vh}}
+@media (max-width:900px){
+  .page{flex-direction:column}
+  /* On small screens keep the left content centered and take full viewport height */
+  .left{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  /* Start with the right section collapsed to 0x0 and hidden from interaction.
+     A `.revealed` class will expand it. Use max-height for smooth animations. */
+  .right{
+    width:100%;
+    max-height:0; /* collapsed state */
+    padding:0 24px; /* reduced padding when collapsed to avoid overflow */
+    overflow:hidden;
+    opacity:0;
+    pointer-events:none;
+    transition: max-height 420ms cubic-bezier(.2,.9,.3,1), opacity 320ms ease, padding 320ms ease;
+  }
+  /* visible state after swipe-up */
+  .right.revealed{
+    max-height:80vh; /* allow the right panel to grow to a large portion of the screen */
+    padding:40px;
+    opacity:1;
+    pointer-events:auto;
+  }
+  /* Slight visual hint when collapsed: keep slides area a bit shorter */
+  .slides{height:50vh}
+}
