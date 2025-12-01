@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Treasure?</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <main class="page">
+    <section class="left">
+      <div class="slideshow" id="slideshow">
+        <button class="nav prev" id="prev">❮</button>
+        <div class="slides" id="slides"></div>
+        <button class="nav next" id="next">❯</button>
+      </div>
+    </section>
+
+    <section class="right">
+  <div class="card reveal-hidden" id="proposalCard">
+  <h1 class="propose">Will you marry me?</h1>
+  <p id="names" class="names"></p>
+  <img src="img/MarryMe.png" alt="Marry Me" class="card-image" loading="lazy" />
+        <div class="actions">
+          <button type="button" id="yesBtn" class="btn primary">Say Yes 💍</button>
+        </div>
+      </div>
+      <noscript>
+        <style>
+          /* If JS is disabled, ensure the card is visible */
+          .reveal-hidden{opacity:1 !important;transform:none !important;pointer-events:auto !important}
+        </style>
+      </noscript>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div id="modal" class="modal" aria-hidden="true">
+      <div class="modal-content">
+      <h2>Yeah! She said YES! 🎉</h2>
+      <img src="img/SayYes.webp" alt="She said yes" class="modal-image" />
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/starfall.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>
