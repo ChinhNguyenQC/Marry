@@ -70,5 +70,8 @@ Next steps (ideas)
 Starfall visual effect
 - A lightweight canvas starfall effect is included (`js/starfall.js`). It appends a full-screen canvas and animates subtle falling stars over the page. You don't need to configure anything — it runs automatically.
 
+Disable pull-to-refresh on mobile
+- The project now disables the browser "pull-to-refresh" gesture on mobile so a downward pull won't accidentally refresh the page. This is implemented by adding `overscroll-behavior-y: none` in `css/style.css` and a small JS fallback handler in `js/script.js` (for older iOS Safari that doesn't support the CSS property).
+
 
 Enjoy! Put your pictures into `img/` and open `index.html` to preview the proposal.

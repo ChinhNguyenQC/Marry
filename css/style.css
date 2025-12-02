@@ -2,7 +2,12 @@
   --bg:#0f1724; --card:#0b1220; --accent:#ff6b81; --muted:#99a0b0; --glass: rgba(255,255,255,0.03);
 }
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#071023 0%, #081427 60%);color:#eaf0ff}
+/*
+  Prevent mobile "pull-to-refresh" and scrolling chain on supporting browsers.
+  Most modern mobile browsers respect `overscroll-behavior` which stops the
+  browser's default pull-to-refresh and scroll chaining behavior when set.
+*/
+html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#071023 0%, #081427 60%);color:#eaf0ff;overscroll-behavior-y: none;}
 
 .page{display:flex;min-height:100vh}
 .page{position:relative;z-index:1}

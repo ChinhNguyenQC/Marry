@@ -1,4 +1,30 @@
-(function(){
+ (function(){
+  // Prevent 'pull-to-refresh' / overscroll refresh on mobile browsers that
+  // don't support `overscroll-behavior` (older iOS Safari). We only block
+  // the downward pull when at the top of the page and a single touch is active.
+  (function disablePullToRefresh(){
+    let startY = 0;
+    // Use passive:true for touchstart so it doesn't break scroll performance,
+    // but we need passive:false for touchmove so we *can* call preventDefault.
+    document.addEventListener('touchstart', function(e){
+      if (e.touches && e.touches.length === 1) startY = e.touches[0].clientY;
+    }, {passive: true});
+
+    document.addEventListener('touchmove', function(e){
+      if (!(e.touches && e.touches.length === 1)) return;
+      const currentY = e.touches[0].clientY;
+      const isPullingDown = currentY > startY;
+      const isAtTop = window.pageYOffset === 0;
+
+      // If we're at the very top of the page and the user is pulling down,
+      // block the gesture so the browser won't trigger pull-to-refresh.
+      if (isAtTop && isPullingDown) {
+        e.preventDefault();
+      }
+
+      startY = currentY;
+    }, {passive: false});
+  })();
   const MAX=23; // try images 1..12
   const slidesEl=document.getElementById('slides');
   const slides=[];
